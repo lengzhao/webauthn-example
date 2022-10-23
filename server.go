@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/duo-labs/webauthn.io/session"
 	"github.com/duo-labs/webauthn/protocol"
 	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gorilla/mux"
@@ -15,16 +14,20 @@ import (
 
 var webAuthn *webauthn.WebAuthn
 var userDB *userdb
-var sessionStore *session.Store
+var sessionStore *Store
 
 func main() {
 
 	var err error
 	webAuthn, err = webauthn.New(&webauthn.Config{
-		RPDisplayName: "Foobar Corp.",     // Display Name for your site
-		RPID:          "localhost",        // Generally the domain name for your site
-		RPOrigin:      "http://localhost", // The origin URL for WebAuthn requests
+		RPDisplayName: "Foobar Corp.",          // Display Name for your site
+		RPID:          "localhost",             // Generally the domain name for your site
+		RPOrigin:      "http://localhost:8080", // The origin URL for WebAuthn requests
 		// RPIcon: "https://duo.com/logo.png", // Optional icon URL for your site
+		AttestationPreference:  protocol.PreferNoAttestation,
+		AuthenticatorSelection: webauthn.SelectAuthenticator("", nil, "preferred"),
+		// AuthenticatorSelection: webauthn.SelectAuthenticator("platform", nil, "preferred"),
+		Debug: true,
 	})
 
 	if err != nil {
@@ -33,7 +36,7 @@ func main() {
 
 	userDB = DB()
 
-	sessionStore, err = session.NewStore()
+	sessionStore, err = NewStore()
 	if err != nil {
 		log.Fatal("failed to create session store:", err)
 	}
@@ -71,15 +74,13 @@ func BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		userDB.PutUser(user)
 	}
 
-	registerOptions := func(credCreationOpts *protocol.PublicKeyCredentialCreationOptions) {
-		credCreationOpts.CredentialExcludeList = user.CredentialExcludeList()
-	}
+	// registerOptions := func(credCreationOpts *protocol.PublicKeyCredentialCreationOptions) {
+	// 	credCreationOpts.CredentialExcludeList = user.CredentialExcludeList()
+	// 	credCreationOpts.AuthenticatorSelection = webauthn.SelectAuthenticator("platform", true, "")
+	// }
 
 	// generate PublicKeyCredentialCreationOptions, session data
-	options, sessionData, err := webAuthn.BeginRegistration(
-		user,
-		registerOptions,
-	)
+	options, sessionData, err := webAuthn.BeginRegistration(user)
 
 	if err != nil {
 		log.Println(err)
@@ -116,7 +117,7 @@ func FinishRegistration(w http.ResponseWriter, r *http.Request) {
 	// load the session data
 	sessionData, err := sessionStore.GetWebauthnSession("registration", r)
 	if err != nil {
-		log.Println(err)
+		log.Println("session:", err)
 		jsonResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
