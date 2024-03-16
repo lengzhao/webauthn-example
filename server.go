@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/duo-labs/webauthn/protocol"
-	"github.com/duo-labs/webauthn/webauthn"
+	"github.com/go-webauthn/webauthn/protocol"
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/gorilla/mux"
 )
 
@@ -64,6 +64,7 @@ func BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, fmt.Errorf("must supply a valid username i.e. foo@bar.com"), http.StatusBadRequest)
 		return
 	}
+	log.Println("BeginRegistration:", username)
 
 	// get user
 	user, err := userDB.GetUser(username)
@@ -95,6 +96,7 @@ func BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Println("BeginRegistration:", toJson(options))
 
 	jsonResponse(w, options, http.StatusOK)
 }
@@ -104,6 +106,7 @@ func FinishRegistration(w http.ResponseWriter, r *http.Request) {
 	// get username
 	vars := mux.Vars(r)
 	username := vars["username"]
+	log.Println("FinishRegistration:", username)
 
 	// get user
 	user, err := userDB.GetUser(username)
@@ -130,6 +133,7 @@ func FinishRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.AddCredential(*credential)
+	log.Println("Registration:", toJson(*credential))
 
 	jsonResponse(w, "Registration Success", http.StatusOK)
 }
@@ -139,6 +143,7 @@ func BeginLogin(w http.ResponseWriter, r *http.Request) {
 	// get username
 	vars := mux.Vars(r)
 	username := vars["username"]
+	log.Println("BeginLogin:", username)
 
 	// get user
 	user, err := userDB.GetUser(username)
@@ -165,6 +170,7 @@ func BeginLogin(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Println("BeginLogin:", toJson(options))
 
 	jsonResponse(w, options, http.StatusOK)
 }
@@ -174,6 +180,7 @@ func FinishLogin(w http.ResponseWriter, r *http.Request) {
 	// get username
 	vars := mux.Vars(r)
 	username := vars["username"]
+	log.Println("FinishLogin:", username)
 
 	// get user
 	user, err := userDB.GetUser(username)
@@ -202,12 +209,13 @@ func FinishLogin(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Println("FinishLogin:", toJson(sessionData))
 
 	// handle successful login
 	jsonResponse(w, "Login Success", http.StatusOK)
 }
 
-// from: https://github.com/duo-labs/webauthn.io/blob/3f03b482d21476f6b9fb82b2bf1458ff61a61d41/server/response.go#L15
+// from: https://github.com/go-webauthn/webauthn.io/blob/3f03b482d21476f6b9fb82b2bf1458ff61a61d41/server/response.go#L15
 func jsonResponse(w http.ResponseWriter, d interface{}, c int) {
 	dj, err := json.Marshal(d)
 	if err != nil {
@@ -216,4 +224,9 @@ func jsonResponse(w http.ResponseWriter, d interface{}, c int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(c)
 	fmt.Fprintf(w, "%s", dj)
+}
+
+func toJson(in any) string {
+	data, _ := json.Marshal(in)
+	return string(data)
 }

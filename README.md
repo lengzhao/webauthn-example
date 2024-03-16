@@ -1,6 +1,6 @@
 # WebAuthn Basic Client/Server Example (go)
 
-This library implements a simple, basic WebAuthn client and server based on [duo's WebAuthn implementation](https://github.com/duo-labs/webauthn). The code pulls inspiration from [duo's WebAuthn example implementation](https://github.com/duo-labs/webauthn.io). This example is NOT meant to be used in production, but rather as an introduction to WebAuthn as well as a more quick-and-dirty, stripped down version of [webauthn.io](https://webauthn.io/).
+This library implements a simple, basic WebAuthn client and server based on [WebAuthn implementation](https://github.com/go-webauthn/webauthn).  This example is NOT meant to be used in production, but rather as an introduction to WebAuthn as well as a more quick-and-dirty, stripped down version of [webauthn.io](https://webauthn.io/).
 
 ## Blog Post
 
